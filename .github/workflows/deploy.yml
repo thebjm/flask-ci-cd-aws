@@ -25,8 +25,8 @@ jobs:
           docker stop flask-ci-cd || true
           docker rm flask-ci-cd || true
           docker rmi flask-ci-cd || true
-          cd flask-ci-cd-aws || git clone https://github.com/thebjm/flask-ci-cd-aws.git && cd flask-ci-cd-aws
-	  git pull origin master
+          git clone https://github.com/thebjm/flask-ci-cd-aws.git || true
+          cd flask-ci-cd-aws
           docker build -t flask-ci-cd .
           docker run -d -p 80:5000 --name flask-ci-cd flask-ci-cd
         EOF
