@@ -18,16 +18,22 @@ jobs:
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Remove old container if running
+            # Stop and remove old container
             docker rm -f flask-app || true
 
-            # Force-remove the old Docker image if exists
+            # Free port 80 if it's being used
+            PID=$(lsof -t -i:80)
+            if [ ! -z "$PID" ]; then
+              kill -9 $PID || true
+            fi
+
+            # Remove old Docker image if it exists
             IMAGE_ID=$(docker images -q flask-ci-cd)
             if [ ! -z "$IMAGE_ID" ]; then
               docker rmi -f $IMAGE_ID || true
             fi
 
-            # Clone the latest code
+            # Clone latest code
             rm -rf flask-ci-cd-aws
             git clone https://github.com/thebjm/flask-ci-cd-aws.git
             cd flask-ci-cd-aws
@@ -35,5 +41,5 @@ jobs:
             # Build new Docker image
             docker build -t flask-ci-cd .
 
-            # Run container on port 80
+            # Run the container on port 80 -> container port 5000
             docker run -d -p 80:5000 --name flask-app flask-ci-cd
