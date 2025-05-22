@@ -11,17 +11,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy to EC2
+      - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            # Remove old container if running
+            docker rm -f flask-app || true
+
+            # Force-remove the old Docker image if exists
+            IMAGE_ID=$(docker images -q flask-ci-cd)
+            if [ ! -z "$IMAGE_ID" ]; then
+              docker rmi -f $IMAGE_ID || true
+            fi
+
+            # Clone the latest code
             rm -rf flask-ci-cd-aws
             git clone https://github.com/thebjm/flask-ci-cd-aws.git
             cd flask-ci-cd-aws
-            docker rm -f flask-app || true
-            docker rmi flask-ci-cd || true
+
+            # Build new Docker image
             docker build -t flask-ci-cd .
+
+            # Run container on port 80
             docker run -d -p 80:5000 --name flask-app flask-ci-cd
